@@ -65,6 +65,20 @@ export default async function handler(req, res) {
       }
     }
 
+    if (req.method === 'DELETE') {
+      // Extract ID from query parameter
+      const id = req.query.id || req.url?.split('/').pop();
+      if (!id) {
+        return res.status(400).json({ error: 'Rental ID is required' });
+      }
+
+      const deleted = await Rental.findByIdAndDelete(id);
+      if (!deleted) {
+        return res.status(404).json({ error: 'Rental not found' });
+      }
+      return res.status(200).json({ message: 'Rental deleted successfully', deleted });
+    }
+
     res.status(405).json({ error: 'Method Not Allowed' });
   } catch (err) {
     console.error('Serverless Error:', err);
