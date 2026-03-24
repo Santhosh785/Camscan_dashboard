@@ -66,9 +66,11 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'DELETE') {
-      // Extract ID from query parameter
-      const id = req.query.id || req.url?.split('/').pop();
-      if (!id) {
+      // Extract ID from URL path
+      const urlParts = req.url?.split('/') || [];
+      const id = urlParts[urlParts.length - 1]?.split('?')[0]; // Remove query params if any
+
+      if (!id || id === 'rentals') {
         return res.status(400).json({ error: 'Rental ID is required' });
       }
 
