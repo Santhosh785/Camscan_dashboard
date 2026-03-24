@@ -66,12 +66,32 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'DELETE') {
-      // Extract ID from URL path
-      const urlParts = req.url?.split('/') || [];
-      const id = urlParts[urlParts.length - 1]?.split('?')[0]; // Remove query params if any
+      // Extract ID from URL path - handle multiple formats
+      let id = null;
 
-      if (!id || id === 'rentals') {
-        return res.status(400).json({ error: 'Rental ID is required' });
+      // Try to get from URL path
+      if (req.url) {
+        const urlParts = req.url.split('/').filter(part => part && part !== 'rentals');
+        const lastPart = urlParts[urlParts.length - 1];
+        if (lastPart) {
+          id = lastPart.split('?')[0]; // Remove query params
+        }
+      }
+
+      // Fallback to query parameter
+      if (!id && req.query?.id) {
+        id = req.query.id;
+      }
+
+      console.log('DELETE request - URL:', req.url, 'Extracted ID:', id);
+
+      if (!id || id === 'rentals' || id === '') {
+        return res.status(400).json({ error: 'Rental ID is required', url: req.url });
+      }
+
+      // Validate MongoDB ObjectId format
+      if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+        return res.status(400).json({ error: 'Invalid ID format' });
       }
 
       const deleted = await Rental.findByIdAndDelete(id);
