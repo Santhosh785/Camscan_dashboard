@@ -12,6 +12,7 @@ import {
   Filter,
   ArrowUpRight,
   Trash2,
+  Pencil,
   X
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -46,6 +47,7 @@ export default function App() {
   const [connectionError, setConnectionError] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [isUsingMockData, setIsUsingMockData] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<RentalData>>({
     slNo: '',
     name: '',
@@ -83,12 +85,36 @@ export default function App() {
     }
   };
 
+  const handleEditClick = (rental: RentalData) => {
+    setEditingId(rental._id || null);
+    setFormData({
+      slNo: rental.slNo,
+      name: rental.name,
+      phone: rental.phone,
+      perDayRent: rental.perDayRent,
+      rentDate: rental.rentDate,
+      timeOut: rental.timeOut,
+      product: rental.product,
+      returnDate: rental.returnDate,
+      advanceAmt: rental.advanceAmt,
+      totalAmount: rental.totalAmount
+    });
+    setShowAddModal(true);
+  };
+
   const handleAddRental = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post(`${API_URL}/rentals`, formData);
+      if (editingId) {
+        // Update existing rental
+        await axios.put(`${API_URL}/rentals/${editingId}`, formData);
+      } else {
+        // Add new rental
+        await axios.post(`${API_URL}/rentals`, formData);
+      }
       await fetchData();
       setShowAddModal(false);
+      setEditingId(null);
       // Reset form
       setFormData({
         slNo: '',
@@ -103,8 +129,8 @@ export default function App() {
         totalAmount: 0
       });
     } catch (err) {
-      console.error('Error adding rental:', err);
-      alert('Failed to add rental. Please check your connection and try again.');
+      console.error('Error saving rental:', err);
+      alert(`Failed to ${editingId ? 'update' : 'add'} rental. Please check your connection and try again.`);
     }
   };
 
@@ -391,13 +417,22 @@ export default function App() {
                           </span>
                         </td>
                         <td>
-                          <button
-                            className="btn-icon btn-delete"
-                            onClick={() => handleDeleteRental(item._id, item.slNo)}
-                            title="Delete rental"
-                          >
-                            <Trash2 size={18} />
-                          </button>
+                          <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button
+                              className="btn-icon btn-edit"
+                              onClick={() => handleEditClick(item)}
+                              title="Edit rental"
+                            >
+                              <Pencil size={18} />
+                            </button>
+                            <button
+                              className="btn-icon btn-delete"
+                              onClick={() => handleDeleteRental(item._id, item.slNo)}
+                              title="Delete rental"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
                         </td>
                       </motion.tr>
                     ))}
@@ -434,8 +469,23 @@ export default function App() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="modal-header">
-                <h2>Add New Rental</h2>
-                <button className="btn-icon" onClick={() => setShowAddModal(false)}>
+                <h2>{editingId ? 'Edit Rental' : 'Add New Rental'}</h2>
+                <button className="btn-icon" onClick={() => {
+                  setShowAddModal(false);
+                  setEditingId(null);
+                  setFormData({
+                    slNo: '',
+                    name: '',
+                    phone: '',
+                    perDayRent: 0,
+                    rentDate: '',
+                    timeOut: '',
+                    product: '',
+                    returnDate: '',
+                    advanceAmt: 0,
+                    totalAmount: 0
+                  });
+                }}>
                   <X size={20} />
                 </button>
               </div>
@@ -551,11 +601,26 @@ export default function App() {
                 </div>
 
                 <div className="modal-actions">
-                  <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)}>
+                  <button type="button" className="btn btn-secondary" onClick={() => {
+                    setShowAddModal(false);
+                    setEditingId(null);
+                    setFormData({
+                      slNo: '',
+                      name: '',
+                      phone: '',
+                      perDayRent: 0,
+                      rentDate: '',
+                      timeOut: '',
+                      product: '',
+                      returnDate: '',
+                      advanceAmt: 0,
+                      totalAmount: 0
+                    });
+                  }}>
                     Cancel
                   </button>
                   <button type="submit" className="btn btn-primary">
-                    Add Rental
+                    {editingId ? 'Update Rental' : 'Add Rental'}
                   </button>
                 </div>
               </form>
@@ -966,6 +1031,11 @@ export default function App() {
         .btn-icon:hover {
           background: rgba(255, 255, 255, 0.1);
           color: white;
+        }
+
+        .btn-edit:hover {
+          background: rgba(59, 130, 246, 0.1) !important;
+          color: #3b82f6 !important;
         }
 
         .btn-delete:hover {

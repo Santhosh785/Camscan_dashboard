@@ -59,6 +59,19 @@ app.post('/api/rentals', async (req, res) => {
   }
 });
 
+app.put('/api/rentals/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updated = await Rental.findByIdAndUpdate(id, req.body, { new: true });
+    if (!updated) {
+      return res.status(404).json({ error: 'Rental not found' });
+    }
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.delete('/api/rentals/:id', async (req, res) => {
   try {
     const { id } = req.params;

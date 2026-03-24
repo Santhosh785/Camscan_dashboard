@@ -65,6 +65,31 @@ export default async function handler(req, res) {
       }
     }
 
+    if (req.method === 'PUT') {
+      // Extract ID from URL path
+      let id = null;
+      if (req.url) {
+        const urlParts = req.url.split('/').filter(part => part && part !== 'rentals');
+        const lastPart = urlParts[urlParts.length - 1];
+        if (lastPart) {
+          id = lastPart.split('?')[0];
+        }
+      }
+      if (!id && req.query?.id) {
+        id = req.query.id;
+      }
+
+      if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
+        return res.status(400).json({ error: 'Invalid rental ID' });
+      }
+
+      const updated = await Rental.findByIdAndUpdate(id, req.body, { new: true });
+      if (!updated) {
+        return res.status(404).json({ error: 'Rental not found' });
+      }
+      return res.status(200).json(updated);
+    }
+
     if (req.method === 'DELETE') {
       // Extract ID from URL path - handle multiple formats
       let id = null;
